@@ -310,6 +310,7 @@
 <script>
 // ── 資料 ──
 let allComments = [];
+const PAGE_ID = new URLSearchParams(window.location.search).get('page') || 'default';
 
 // ── 工具 ──
 function formatTime(iso) {
@@ -347,7 +348,7 @@ async function loadComments() {
     return;
   }
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=getComments`);
+    const res = await fetch(`${SCRIPT_URL}?action=getComments&pageId=${encodeURIComponent(PAGE_ID)}`);
     const data = await res.json();
     if (data.success) {
       allComments = data.comments;
@@ -468,7 +469,7 @@ async function submitComment(parentId) {
   submitBtn.textContent = '送出中…';
 
   try {
-    const params = new URLSearchParams({ action:'addComment', author, content, parentId: parentId||'' });
+    const params = new URLSearchParams({ action:'addComment', author, content, parentId: parentId||'', pageId: PAGE_ID });
     const res  = await fetch(`${SCRIPT_URL}?${params}`);
     const data = await res.json();
 

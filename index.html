@@ -25,7 +25,7 @@
 
   body {
     font-family: 'Noto Sans TC', sans-serif;
-    background: var(--paper);
+    background: transparent;
     color: var(--ink);
     font-size: 14px;
     line-height: 1.7;
@@ -85,7 +85,7 @@
   }
   input[type="text"], textarea {
     width: 100%;
-    background: transparent;
+    background: var(--paper);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     padding: 9px 12px;
@@ -310,7 +310,6 @@
 <script>
 // ── 資料 ──
 let allComments = [];
-const PAGE_ID = new URLSearchParams(window.location.search).get('page') || 'default';
 
 // ── 工具 ──
 function formatTime(iso) {
@@ -348,7 +347,7 @@ async function loadComments() {
     return;
   }
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=getComments&pageId=${encodeURIComponent(PAGE_ID)}`);
+    const res = await fetch(`${SCRIPT_URL}?action=getComments`);
     const data = await res.json();
     if (data.success) {
       allComments = data.comments;
@@ -469,7 +468,7 @@ async function submitComment(parentId) {
   submitBtn.textContent = '送出中…';
 
   try {
-    const params = new URLSearchParams({ action:'addComment', author, content, parentId: parentId||'', pageId: PAGE_ID });
+    const params = new URLSearchParams({ action:'addComment', author, content, parentId: parentId||'' });
     const res  = await fetch(`${SCRIPT_URL}?${params}`);
     const data = await res.json();
 

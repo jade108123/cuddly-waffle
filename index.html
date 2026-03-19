@@ -10,22 +10,22 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --ink:      #1a1a1a;
-    --ink-soft: #555;
-    --ink-faint:#aaa;
-    --paper:    #faf9f7;
-    --line:     #e8e4de;
-    --accent:   #7c6a52;
-    --accent-l: #b5a08a;
-    --red:      #9b4444;
-    --green:    #4a7c59;
+    --ink:      #e8e6e3;
+    --ink-soft: #a8a49f;
+    --ink-faint:#5a5855;
+    --paper:    #1e1e1e;
+    --line:     #2e2e2e;
+    --accent:   #c4a882;
+    --accent-l: #8a7560;
+    --red:      #c47070;
+    --green:    #6aaa85;
     --radius:   6px;
-    --shadow:   0 2px 12px rgba(0,0,0,.06);
+    --shadow:   0 2px 12px rgba(0,0,0,.3);
   }
 
   body {
     font-family: 'Noto Sans TC', sans-serif;
-    background: transparent;
+    background: var(--paper);
     color: var(--ink);
     font-size: 14px;
     line-height: 1.7;
@@ -57,7 +57,7 @@
 
   /* ── 留言表單 ── */
   .form-wrap {
-    background: #fff;
+    background: #252525;
     border: 1px solid var(--line);
     border-radius: var(--radius);
     padding: 18px 20px;
@@ -65,7 +65,7 @@
     box-shadow: var(--shadow);
   }
   .form-wrap.reply-form {
-    background: #fdf8f3;
+    background: #222018;
     border-color: var(--accent-l);
     margin-top: 10px;
     margin-left: 32px;
@@ -85,7 +85,7 @@
   }
   input[type="text"], textarea {
     width: 100%;
-    background: var(--paper);
+    background: #181818;
     border: 1px solid var(--line);
     border-radius: var(--radius);
     padding: 9px 12px;
@@ -152,7 +152,7 @@
     font-size: 11px;
     border: 1px solid var(--accent-l);
   }
-  .btn-reply:hover { background: #f5ede3; }
+  .btn-reply:hover { background: #2a2218; }
 
   .btn-delete {
     background: transparent;
@@ -171,8 +171,8 @@
     margin-top: 8px;
     display: none;
   }
-  .toast.error { background: #fdf0f0; color: var(--red); border: 1px solid #f0c8c8; }
-  .toast.success { background: #f0faf4; color: var(--green); border: 1px solid #bce0cb; }
+  .toast.error { background: #2e1f1f; color: var(--red); border: 1px solid #5a3030; }
+  .toast.success { background: #1a2e22; color: var(--green); border: 1px solid #2e5a3e; }
   .toast.show { display: block; }
 
   /* ── 留言列表 ── */
@@ -310,6 +310,7 @@
 <script>
 // ── 資料 ──
 let allComments = [];
+const PAGE_ID = new URLSearchParams(window.location.search).get('page') || 'default';
 
 // ── 工具 ──
 function formatTime(iso) {
@@ -347,7 +348,7 @@ async function loadComments() {
     return;
   }
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=getComments`);
+    const res = await fetch(`${SCRIPT_URL}?action=getComments&pageId=${encodeURIComponent(PAGE_ID)}`);
     const data = await res.json();
     if (data.success) {
       allComments = data.comments;
@@ -468,7 +469,7 @@ async function submitComment(parentId) {
   submitBtn.textContent = '送出中…';
 
   try {
-    const params = new URLSearchParams({ action:'addComment', author, content, parentId: parentId||'' });
+    const params = new URLSearchParams({ action:'addComment', author, content, parentId: parentId||'', pageId: PAGE_ID });
     const res  = await fetch(`${SCRIPT_URL}?${params}`);
     const data = await res.json();
 

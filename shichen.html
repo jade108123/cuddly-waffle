@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>時辰換算</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500&family=Noto+Sans+TC:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #e8e6e3;
+  --ink-soft: #a8a49f;
+  --ink-faint: #5a5855;
+  --paper: #1e1e1e;
+  --surface: #252525;
+  --surface2: #2c2c2c;
+  --line: #333;
+  --accent: #c4a882;
+  --accent-l: #8a7560;
+  --radius: 8px;
+}
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.7;
+  padding: 20px;
+}
+.now-card {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.now-label { font-size: 12px; color: var(--ink-faint); letter-spacing: .06em; }
+.now-main { font-family: 'Noto Serif TC', serif; font-size: 28px; font-weight: 400; color: var(--accent); }
+.now-alias { font-size: 14px; color: var(--ink-soft); }
+.now-time { font-size: 13px; color: var(--ink-faint); margin-left: auto; font-variant-numeric: tabular-nums; }
+
+.lookup-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.lookup-row label { font-size: 12px; color: var(--ink-faint); letter-spacing: .06em; white-space: nowrap; }
+input[type="time"] {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color .2s;
+  color-scheme: dark;
+}
+input[type="time"]:focus { border-color: var(--accent-l); }
+
+.result-card {
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  min-height: 60px;
+}
+.result-main {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.result-detail { font-size: 12px; color: var(--ink-soft); }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+th {
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--ink-faint);
+  letter-spacing: .08em;
+  border-bottom: 1px solid var(--line);
+}
+td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+tr:last-child td { border-bottom: none; }
+tr.active td {
+  background: #2a2218;
+  color: var(--accent);
+}
+.td-name {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 15px;
+  color: var(--ink);
+}
+tr.active .td-name { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="now-card">
+  <span class="now-label">現在是</span>
+  <span class="now-main" id="nowZhi">—</span>
+  <span class="now-alias" id="nowAlias">—</span>
+  <span class="now-time" id="nowTime"></span>
+</div>
+
+<div class="lookup-row">
+  <label>查詢時刻</label>
+  <input type="time" id="timeInput" value="12:00">
+</div>
+
+<div class="result-card" id="resultCard"></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>時辰</th>
+      <th>時段</th>
+      <th>別稱</th>
+      <th>典故</th>
+    </tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
+</table>
+
+<script>
+const SHICHEN = [
+  { zhi:'子', name:'子時', alias:'夜半', range:'23:00–01:00', hours:[23,0], note:'萬籟俱寂，夜深人靜' },
+  { zhi:'丑', name:'丑時', alias:'雞鳴', range:'01:00–03:00', hours:[1,2],  note:'雞開始鳴叫報曉' },
+  { zhi:'寅', name:'寅時', alias:'平旦', range:'03:00–05:00', hours:[3,4],  note:'黎明前的黑暗，天將破曉' },
+  { zhi:'卯', name:'卯時', alias:'日出', range:'05:00–07:00', hours:[5,6],  note:'旭日東升，萬物甦醒' },
+  { zhi:'辰', name:'辰時', alias:'食時', range:'07:00–09:00', hours:[7,8],  note:'早膳時刻，古人進食' },
+  { zhi:'巳', name:'巳時', alias:'隅中', range:'09:00–11:00', hours:[9,10], note:'日升至東南，臨近正午' },
+  { zhi:'午', name:'午時', alias:'日中', range:'11:00–13:00', hours:[11,12],note:'日照當頂，陽氣最盛' },
+  { zhi:'未', name:'未時', alias:'日昳', range:'13:00–15:00', hours:[13,14],note:'日過中天，開始西斜' },
+  { zhi:'申', name:'申時', alias:'晡時', range:'15:00–17:00', hours:[15,16],note:'傍晚進食，又稱申餔' },
+  { zhi:'酉', name:'酉時', alias:'日入', range:'17:00–19:00', hours:[17,18],note:'夕陽西下，日落時分' },
+  { zhi:'戌', name:'戌時', alias:'黃昏', range:'19:00–21:00', hours:[19,20],note:'暮色四合，燈火初上' },
+  { zhi:'亥', name:'亥時', alias:'人定', range:'21:00–23:00', hours:[21,22],note:'夜深人靜，安歇之時' },
+];
+
+function getShichen(h) {
+  if (h === 23) return SHICHEN[0];
+  return SHICHEN.find(s => s.hours.includes(h)) || SHICHEN[0];
+}
+
+function renderResult(sc) {
+  document.getElementById('resultCard').innerHTML = `
+    <div class="result-main">${sc.name}（${sc.alias}）　${sc.range}</div>
+    <div class="result-detail">${sc.note}</div>`;
+}
+
+function renderTable(activeZhi) {
+  document.getElementById('tableBody').innerHTML = SHICHEN.map(s => `
+    <tr class="${s.zhi === activeZhi ? 'active' : ''}">
+      <td class="td-name">${s.name}</td>
+      <td>${s.range}</td>
+      <td>${s.alias}</td>
+      <td>${s.note}</td>
+    </tr>`).join('');
+}
+
+function updateNow() {
+  const now = new Date();
+  const h = now.getHours();
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const sc = getShichen(h);
+  document.getElementById('nowZhi').textContent = sc.name;
+  document.getElementById('nowAlias').textContent = sc.alias;
+  document.getElementById('nowTime').textContent = `${h}:${m}`;
+  const inputH = parseInt(document.getElementById('timeInput').value);
+  renderTable(getShichen(isNaN(inputH) ? h : inputH).zhi);
+}
+
+document.getElementById('timeInput').addEventListener('input', function() {
+  const [h] = this.value.split(':').map(Number);
+  const sc = getShichen(h);
+  renderResult(sc);
+  renderTable(sc.zhi);
+});
+
+const initH = new Date().getHours();
+renderResult(getShichen(initH));
+updateNow();
+setInterval(updateNow, 60000);
+</script>
+</body>
+</html>

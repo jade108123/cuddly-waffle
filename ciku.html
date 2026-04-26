@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>古風詞庫</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500&family=Noto+Sans+TC:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #e8e6e3;
+  --ink-soft: #a8a49f;
+  --ink-faint: #5a5855;
+  --paper: #1a1917;
+  --surface: #222120;
+  --surface2: #2a2927;
+  --line: #2e2d2b;
+  --accent: #c4a882;
+  --accent-l: #8a7560;
+  --accent-dim: #3a2e20;
+  --radius: 6px;
+}
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+/* ── 頂部 ── */
+.topbar {
+  padding: 16px 20px 0;
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  z-index: 10;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+.title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.title {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--accent);
+  letter-spacing: .1em;
+}
+.count { font-size: 11px; color: var(--ink-faint); }
+
+/* 搜尋 */
+.search-wrap { position: relative; margin-bottom: 10px; }
+.search-wrap input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 12px 8px 34px;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color .2s;
+}
+.search-wrap input:focus { border-color: var(--accent-l); }
+.search-wrap input::placeholder { color: var(--ink-faint); }
+.search-icon {
+  position: absolute;
+  left: 10px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-faint);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* 分類標籤 */
+.cats {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cat-btn {
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-family: 'Noto Sans TC', sans-serif;
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.cat-btn:hover { border-color: var(--ink-faint); color: var(--ink); }
+.cat-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent-l); }
+
+/* ── 詞條列表 ── */
+.main { padding: 16px 20px 40px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+.word-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  cursor: default;
+  transition: border-color .15s, background .15s;
+  animation: fadeIn .2s ease;
+}
+.word-card:hover {
+  border-color: var(--accent-l);
+  background: var(--surface2);
+}
+.word-text {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink);
+  margin-bottom: 4px;
+  letter-spacing: .06em;
+}
+.word-cat {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.word-desc {
+  font-size: 11px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+.empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="title-row">
+    <span class="title">古風詞庫</span>
+    <span class="count" id="countLabel"></span>
+  </div>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="搜尋詞彙或解釋…">
+  </div>
+  <div class="cats" id="catBar"></div>
+</div>
+
+<div class="main">
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+const WORDS = [
+  // ── 天氣／自然景色 ──
+  {w:'煙霞',c:'天氣',d:'煙霧與霞光，泛指山水景色'},
+  {w:'霽色',c:'天氣',d:'雨後天晴的景色，清朗明亮'},
+  {w:'晴嵐',c:'天氣',d:'晴天山間的霧氣'},
+  {w:'寒雨',c:'天氣',d:'冬日陰冷的細雨'},
+  {w:'飛雪',c:'天氣',d:'紛飛的雪花'},
+  {w:'殘月',c:'天氣',d:'快落山的月亮，多指黎明前'},
+  {w:'孤星',c:'天氣',d:'夜空中單獨閃爍的星'},
+  {w:'朔風',c:'天氣',d:'北方吹來的寒風'},
+  {w:'金烏',c:'天氣',d:'古代對太陽的美稱'},
+  {w:'玉兔',c:'天氣',d:'古代對月亮的美稱'},
+  {w:'層雲',c:'天氣',d:'厚積的雲層，多形容壓迫感'},
+  {w:'薄霧',c:'天氣',d:'輕淡的霧氣'},
+  {w:'驚雷',c:'天氣',d:'突然響起的雷聲'},
+  {w:'霜華',c:'天氣',d:'霜的晶瑩光澤'},
+  {w:'斜陽',c:'天氣',d:'傍晚偏斜的陽光'},
+  {w:'晨曦',c:'天氣',d:'清晨最初的陽光'},
+  {w:'雲翳',c:'天氣',d:'遮蔽天空的雲層'},
+  {w:'夜雨',c:'天氣',d:'夜間降落的雨'},
+  {w:'清露',c:'天氣',d:'清晨葉上的露水'},
+  {w:'長虹',c:'天氣',d:'雨後彩虹，象徵吉瑞'},
+
+  // ── 建築／地點 ──
+  {w:'朱樓',c:'建築',d:'紅色的樓閣，多指富貴人家'},
+  {w:'飛簷',c:'建築',d:'向上翹起的屋簷'},
+  {w:'迴廊',c:'建築',d:'彎曲環繞的走廊'},
+  {w:'閣樓',c:'建築',d:'樓房上層的小室'},
+  {w:'水榭',c:'建築',d:'建於水邊或水上的亭閣'},
+  {w:'書齋',c:'建築',d:'讀書寫字的房間'},
+  {w:'禪房',c:'建築',d:'僧侶修行居住的房間'},
+  {w:'廂房',c:'建築',d:'正房兩側的房間'},
+  {w:'長廊',c:'建築',d:'細長的有頂走道'},
+  {w:'牌坊',c:'建築',d:'旌表功德的門形建築'},
+  {w:'寒舍',c:'建築',d:'謙稱自己的住所'},
+  {w:'茅屋',c:'建築',d:'草頂的簡陋房舍'},
+  {w:'深宮',c:'建築',d:'宮殿深處，多指幽禁之所'},
+  {w:'冷殿',c:'建築',d:'荒廢冷清的宮殿'},
+  {w:'石徑',c:'建築',d:'鋪石的小路'},
+  {w:'曲橋',c:'建築',d:'彎曲的橋，多在園林池上'},
+  {w:'古剎',c:'建築',d:'歷史悠久的寺廟'},
+  {w:'山門',c:'建築',d:'寺廟的正門'},
+  {w:'亭台',c:'建築',d:'供休憩觀景的小亭'},
+  {w:'幽徑',c:'建築',d:'僻靜幽深的小路'},
+
+  // ── 服飾／配件 ──
+  {w:'廣袖',c:'服飾',d:'寬大的袖子，古代禮服常見'},
+  {w:'錦袍',c:'服飾',d:'以錦緞製成的長袍'},
+  {w:'鳳釵',c:'服飾',d:'鳳凰形狀的髮釵'},
+  {w:'玉佩',c:'服飾',d:'玉製的佩飾，代表身份'},
+  {w:'羅裙',c:'服飾',d:'絲羅製的裙子，輕薄飄逸'},
+  {w:'輕紗',c:'服飾',d:'薄透的紗織物'},
+  {w:'素衣',c:'服飾',d:'素色無紋的衣裳，多表素雅或服喪'},
+  {w:'霞帔',c:'服飾',d:'貴族命婦的披肩裝飾'},
+  {w:'束髮',c:'服飾',d:'將頭髮束起的髮型'},
+  {w:'幕離',c:'服飾',d:'出行時遮臉的薄紗帽'},
+  {w:'披風',c:'服飾',d:'披在肩上的外衣'},
+  {w:'腰帶',c:'服飾',d:'束腰的帶子，常繫配飾'},
+  {w:'繡鞋',c:'服飾',d:'繡有花紋的女鞋'},
+  {w:'翠鈿',c:'服飾',d:'翡翠製的額飾或首飾'},
+  {w:'金縷',c:'服飾',d:'金絲編織的裝飾'},
+
+  // ── 武器／武功 ──
+  {w:'青鋒',c:'武器',d:'鋒利的劍，泛指寶劍'},
+  {w:'長戟',c:'武器',d:'前端有矛頭和橫枝的長兵器'},
+  {w:'彎弓',c:'武器',d:'拉開的弓，泛指弓箭'},
+  {w:'暗器',c:'武器',d:'隱藏偷襲用的武器，如鏢、針'},
+  {w:'護心鏡',c:'武器',d:'護住心口的圓形甲片'},
+  {w:'奇門遁甲',c:'武器',d:'古代術數，後引申為神秘陣法'},
+  {w:'輕功',c:'武器',d:'身法輕盈快速的武學'},
+  {w:'內力',c:'武器',d:'體內蘊藏的氣力'},
+  {w:'劍氣',c:'武器',d:'劍法中蘊含的氣勁'},
+  {w:'掌風',c:'武器',d:'出掌時帶起的氣流力道'},
+  {w:'刀芒',c:'武器',d:'刀光閃現的鋒芒'},
+  {w:'鐵甲',c:'武器',d:'鐵製的防護盔甲'},
+  {w:'軟劍',c:'武器',d:'柔韌可彎曲的特殊劍'},
+  {w:'毒針',c:'武器',d:'沾有毒藥的細針'},
+  {w:'護衛',c:'武器',d:'保護要人的隨身侍衛'},
+
+  // ── 情緒／神態 ──
+  {w:'黯然',c:'情緒',d:'心情低落、神色黯淡'},
+  {w:'悵惘',c:'情緒',d:'失意惆悵、不知所措'},
+  {w:'凝眸',c:'情緒',d:'目光專注地凝視'},
+  {w:'蹙眉',c:'情緒',d:'皺起眉頭，表示憂愁或不滿'},
+  {w:'嫣然',c:'情緒',d:'美麗地微笑'},
+  {w:'含笑',c:'情緒',d:'臉帶微笑，未完全笑開'},
+  {w:'冷笑',c:'情緒',d:'帶有輕蔑或諷刺的笑'},
+  {w:'傲然',c:'情緒',d:'神態驕傲，不屈服'},
+  {w:'漠然',c:'情緒',d:'冷淡、無動於衷的樣子'},
+  {w:'愀然',c:'情緒',d:'臉色變得憂愁嚴肅'},
+  {w:'悲慟',c:'情緒',d:'極度悲傷的狀態'},
+  {w:'怔忪',c:'情緒',d:'驚惶失神的樣子'},
+  {w:'欣然',c:'情緒',d:'高興愉快的樣子'},
+  {w:'忿然',c:'情緒',d:'憤怒的樣子'},
+  {w:'惘然',c:'情緒',d:'失意若有所失的神情'},
+  {w:'哽咽',c:'情緒',d:'悲傷難過到說不出話'},
+  {w:'靜默',c:'情緒',d:'沉默不語的狀態'},
+  {w:'怔怔',c:'情緒',d:'發呆出神的樣子'},
+  {w:'澀然',c:'情緒',d:'心中苦澀難言的感覺'},
+  {w:'釋然',c:'情緒',d:'放下心結後的輕鬆感'},
+
+  // ── 飲食／器皿 ──
+  {w:'玉盞',c:'飲食',d:'玉製或精美的酒杯'},
+  {w:'金樽',c:'飲食',d:'金製的酒器，泛指珍貴酒具'},
+  {w:'清茗',c:'飲食',d:'清淡的茶'},
+  {w:'佳釀',c:'飲食',d:'美味的好酒'},
+  {w:'羹湯',c:'飲食',d:'濃稠的湯品'},
+  {w:'珍饈',c:'飲食',d:'珍貴美味的食物'},
+  {w:'食盒',c:'飲食',d:'裝食物的精緻盒子'},
+  {w:'銅爐',c:'飲食',d:'銅製的火爐，用於取暖或煮食'},
+  {w:'瓷碗',c:'飲食',d:'瓷製的碗'},
+  {w:'漆盤',c:'飲食',d:'上了漆的托盤'},
+  {w:'藥爐',c:'飲食',d:'煎煮中藥的陶爐'},
+  {w:'冰鎮',c:'飲食',d:'以冰塊冷卻食飲'},
+  {w:'素齋',c:'飲食',d:'不含葷食的齋飯'},
+  {w:'瓊漿',c:'飲食',d:'美酒的雅稱，形容珍貴'},
+  {w:'茶盞',c:'飲食',d:'喝茶用的小杯'},
+];
+
+const CATS = ['全部', ...new Set(WORDS.map(w => w.c))];
+let activeCat = '全部';
+let query = '';
+
+function render() {
+  let list = WORDS;
+  if (activeCat !== '全部') list = list.filter(w => w.c === activeCat);
+  if (query) {
+    const q = query.toLowerCase();
+    list = list.filter(w => w.w.includes(q) || w.d.includes(q));
+  }
+  document.getElementById('countLabel').textContent = `${list.length} 個詞`;
+  const grid = document.getElementById('grid');
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty">沒有找到相關詞彙</div>';
+    return;
+  }
+  grid.innerHTML = list.map(w => `
+    <div class="word-card">
+      <div class="word-text">${w.w}</div>
+      <span class="word-cat">${w.c}</span>
+      <div class="word-desc">${w.d}</div>
+    </div>`).join('');
+}
+
+function buildCats() {
+  document.getElementById('catBar').innerHTML = CATS.map(c => `
+    <button class="cat-btn${c === activeCat ? ' active' : ''}"
+      onclick="selectCat('${c}')">${c}</button>`).join('');
+}
+
+function selectCat(c) {
+  activeCat = c;
+  buildCats();
+  render();
+}
+
+document.getElementById('searchInput').addEventListener('input', function() {
+  query = this.value.trim();
+  render();
+});
+
+buildCats();
+render();
+</script>
+</body>
+</html>
